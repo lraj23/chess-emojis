@@ -1,7 +1,6 @@
 import app from "./client.js";
 
-// Listens to incoming messages that contain "hello"
-app.message('hello', async ({ message, say }) => {
+app.message('secret button', async ({ message, say }) => {
 	// say() sends a message to the channel where the event was triggered
 	await say({
 		blocks: [
@@ -9,24 +8,43 @@ app.message('hello', async ({ message, say }) => {
 				"type": "section",
 				"text": {
 					"type": "mrkdwn",
-					"text": `Hey there <@${message.user}>!`
+					"text": `<@${message.user}> mentioned the secret button! Here it is:`
 				},
 				"accessory": {
 					"type": "button",
 					"text": {
 						"type": "plain_text",
-						"text": "Click Me"
+						"text": "Secret Button :chess-brilliant:"
 					},
 					"action_id": "button_click"
 				}
 			}
 		],
-		text: `Hey there <@${message.user}>!`
+		text: `<@${message.user}> mentioned the secret button! Here it is:`
 	});
 });
 
 app.action('button_click', async ({ body, ack, say }) => {
 	// Acknowledge the action
 	await ack();
-	await say(`<@${body.user.id}> clicked the button`);
+	await say({
+		blocks: [
+			{
+				"type": "section",
+				"text": {
+					"type": "mrkdwn",
+					"text": `<@${body.user.id}> found the secret button :chess-brilliant: Here it is again.`
+				},
+				"accessory": {
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Secret Button :chess-brilliant:"
+					},
+					"action_id": "button_click"
+				}
+			}
+		],
+		text: `<@${body.user.id}> found the secret button :chess-brilliant: Here it is again.`
+	});
 });
