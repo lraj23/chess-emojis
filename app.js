@@ -1,4 +1,5 @@
 import app from "./client.js";
+import { getOptedIn, log, logInteraction, saveState, userRef } from "./datahandler.js";
 const aiApiUrl = "https://openrouter.ai/api/v1/chat/completions";
 const headers = {
 	"Authorization": `Bearer ${process.env.CEMOJIS_AI_API_KEY}`,
@@ -15,7 +16,8 @@ const reaction_emojis = [
 	"real-chess-mistake",
 	"real-chess-missed-win",
 	"blunder"
-]
+];
+const systemMessage = `The user message consists of a message sent in a conversation. Your job is to analyze the message and determine how it would fit as a chess move. For example, a common question or statement would be a book move. The best response to a question or statement would likely be a best move. A response that might not be the best but is still good and understandable would be an excellent move. A simply acceptable response would be a good move. A message that is a bit of a mistake or worse than a good move would be an inaccuracy. Worse than that, a mistake. Even worse, a blunder. A message that is unexpected but much better than the expected best move is a great move. A message that is very unexpected, brings more information, and is far beyond the expected best message would be considered a brilliant move. Finally, a message that had a really obvious best move that wasn't said could possibly be a miss instead. What you HAVE to do is respond EXACTLY with one of these following strings according to your best analysis: ${reaction_emojis.join(", ")}.`;
 
 app.message('', async ({ message, say }) => {
 	const response = await fetch(aiApiUrl, {
@@ -26,7 +28,7 @@ app.message('', async ({ message, say }) => {
 			"messages": [
 				{
 					"role": "system",
-					"content": "The user message consists of a message sent in a conversation. Your job is to analyze the message and determine how it would fit as a chess move. For example, a common question or statement would be a book move. The best response to a question or statement would likely be a best move. A response that might not be the best but is still good and understandable would be an excellent move. A simply acceptable response would be a good move. A message that is a bit of a mistake or worse than a good move would be an inaccuracy. Worse than that, a mistake. Even worse, a blunder. A message that is unexpected but much better than the expected best move is a great move. A message that is very unexpected, brings more information, and is far beyond the expected best message would be considered a brilliant move. Finally, a message that had a really obvious best move that wasn't said could possibly be a miss instead. What you HAVE to do is respond EXACTLY with one of these following strings according to your best analysis: " + reaction_emojis.join(", ") + "."
+					"content": systemMessage
 				},
 				{
 					"role": "user",
@@ -43,6 +45,24 @@ app.message('', async ({ message, say }) => {
 		"timestamp": message.ts
 	});
 
+});
+
+app.command('/chess-emojis-opt-in', async (interaction, say) => {
+	await interaction.ack();
+	await logInteraction(interaction);
+	let userId = interaction.payload.user_id;
+	console.log(userId);
+	let optedIn = getOptedIn();
+
+	if (optedIn.opted_in.includes(userId)) {
+		console.log(optedIn.opted_in);
+		await interaction.say(`<@${userId}> has already opted into the Chess Emojis bot's reactions! :inaccuracy:`);
+		return;
+	}
+
+	await interaction.say(`<@${userId}> opted into the Chess Emoji bot's reactions!!! :chess-brilliant:`);
+	optedIn.opted_in.push(userId);
+	saveState(optedIn);
 });
 
 app.message('secret button', async ({ message, say }) => {
