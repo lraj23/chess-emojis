@@ -1,5 +1,5 @@
 import app from "./client.js";
-import { getOptedIn, log, logInteraction, saveState, userRef } from "./datahandler.js";
+import { getOptedIn, logInteraction, saveState } from "./datahandler.js";
 const aiApiUrl = "https://openrouter.ai/api/v1/chat/completions";
 const headers = {
 	"Authorization": `Bearer ${process.env.CEMOJIS_AI_API_KEY}`,
@@ -47,22 +47,36 @@ app.message('', async ({ message, say }) => {
 
 });
 
-app.command('/chess-emojis-opt-in', async (interaction, say) => {
+app.command('/chess-emojis-opt-in', async (interaction) => {
 	await interaction.ack();
 	await logInteraction(interaction);
 	let userId = interaction.payload.user_id;
-	console.log(userId);
-	let optedIn = getOptedIn();
+	let optedIn = getOptedIn().opted_in;
 
-	if (optedIn.opted_in.includes(userId)) {
-		console.log(optedIn.opted_in);
+	if (optedIn.includes(userId)) {
 		await interaction.say(`<@${userId}> has already opted into the Chess Emojis bot's reactions! :inaccuracy:`);
 		return;
 	}
 
 	await interaction.say(`<@${userId}> opted into the Chess Emoji bot's reactions!!! :chess-brilliant:`);
-	optedIn.opted_in.push(userId);
-	saveState(optedIn);
+	optedIn.push(userId);
+	saveState({ "opted_in": optedIn });
+});
+
+app.command('/chess-emojis-opt-out', async (interaction) => {
+	await interaction.ack();
+	await logInteraction(interaction);
+	let userId = interaction.payload.user_id;
+	let optedIn = getOptedIn().opted_in;
+
+	if (optedIn.includes(userId)) {
+		await interaction.say(`<@${userId}> opted out the Chess Emoji bot's reactions. :blunder:`);
+		optedIn.splice(optedIn.indexOf(userId), 1);
+		saveState({ "opted_in": optedIn });
+		return;
+	}
+
+	await interaction.say(`<@${userId}> You can't opt out because you aren't opted into the Chess Emojis bot's reactions! :real-chess-mistake:`);
 });
 
 app.message('secret button', async ({ message, say }) => {

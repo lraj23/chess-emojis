@@ -127,8 +127,6 @@ function cloneObj(obj) {
 export {
 	saveState,
 	getOptedIn,
-	log,
 	logInteraction,
-	userRef,
 	getUserAt,
 };
