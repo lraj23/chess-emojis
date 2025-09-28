@@ -19,13 +19,19 @@ const reaction_emojis = [
 ];
 const systemMessage = `The user message consists of a message sent in a conversation. Your job is to analyze the message and determine how it would fit as a chess move. `
 	+ `For example, a VERY common question or statement that might usually start a conversation would be a book move. A book move should ONLY be chosen if the message makes sense to start a conversation`
-	+ `The best response to a question or statement would likely be a best move. A response that might not be the best but is still good and understandable would be an excellent move. A simply acceptable response would be a good move. A message that is a bit of a mistake or worse than a good move would be an inaccuracy. Worse than that, a mistake. Even worse, a blunder. A message that is unexpected but much better than the expected best move is a great move. A message that is very unexpected, brings more information, and is far beyond the expected best message would be considered a brilliant move. Finally, a message that had a really obvious best move that wasn't said could possibly be a miss instead. What you HAVE to do is respond EXACTLY with one of these following strings according to your best analysis: ${reaction_emojis.join(", ")}.
+	+ `The best response to a question or statement would likely be a best move. A response that might not be the best but is still good and understandable would be an excellent move. A simply acceptable response would be a good move. A message that is a bit of a mistake or worse than a good move would be an inaccuracy. Worse than that, a mistake. Even worse, a blunder. A message that is unexpected but much better than the expected best move is a great move. A message that is very unexpected, brings more information, and is far beyond the expected best message would be considered a brilliant move. Finally, a message that had a really obvious best move that wasn't said could possibly be a miss instead. What you HAVE to do is respond EXACTLY with one of these following strings according to your best analysis: ${reaction_emojis.join(", ")}.`;
 
-	Just one override: if the message contains the string "secret button" return ${reaction_emojis[0]} NO MATTER WHAT. The user mentioned the secret button!`;
-
-app.message('', async ({ message, say }) => {
+app.message('', async ({ message }) => {
 	const optedIn = getOptedIn().opted_in;
 	if (!optedIn.includes(message.user)) return;
+	if (message.text.toLowerCase().includes("secret button")) {
+		await app.client.reactions.add({
+			"channel": message.channel,
+			"name": reaction_emojis[0],
+			"timestamp": message.ts
+		});
+		return;
+	}
 	const response = await fetch(aiApiUrl, {
 		method: "POST",
 		headers,
@@ -101,9 +107,11 @@ app.command('/chess-emojis-opt-out', async (interaction) => {
 	});
 });
 
-app.message('secret button', async ({ message, say }) => {
+app.message(/secret button/i, async ({ message, say }) => {
 	// say() sends a message to the channel where the event was triggered
-	await say({
+	await app.client.chat.postEphemeral({
+		channel: message.channel,
+		user: message.user,
 		blocks: [
 			{
 				"type": "section",
@@ -126,14 +134,18 @@ app.message('secret button', async ({ message, say }) => {
 				]
 			}
 		],
+		text: `<@${message.user}> mentioned the secret button! Here it is:`,
 		thread_ts: message.ts
 	});
 });
 
-app.action('button_click', async ({ body, ack, say }) => {
+app.action('button_click', async ({ body, ack, respond }) => {
 	// Acknowledge the action
 	await ack();
-	await say({
+	console.log(body.channel.id, body.user.id, body.container.message_ts);
+	await app.client.chat.postEphemeral({
+		channel: body.channel.id,
+		user: body.user.id,
 		blocks: [
 			{
 				"type": "section",
@@ -156,6 +168,7 @@ app.action('button_click', async ({ body, ack, say }) => {
 				]
 			}
 		],
+		text: `<@${body.user.id}> found the secret button :${reaction_emojis[0]}: Here it is again.`,
 		thread_ts: body.container.message_ts
 	});
 });
