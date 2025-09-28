@@ -22,6 +22,8 @@ const systemMessage = `The user message consists of a message sent in a conversa
 Just one override: if the message contains the string "secret button" return ${reaction_emojis[0]} NO MATTER WHAT. The user mentioned the secret button!`;
 
 app.message('', async ({ message, say }) => {
+	const optedIn = getOptedIn().opted_in;
+	if (!optedIn.includes(message.user)) return;
 	const response = await fetch(aiApiUrl, {
 		method: "POST",
 		headers,
