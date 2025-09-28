@@ -19,9 +19,10 @@
 				"channels:read",
 				"chat:write",
 				"chat:write.public",
-                "app_mentions:read",
-                "im:history",
-                "channels:history"
+				"app_mentions:read",
+				"im:history",
+				"channels:history",
+				"reactions:write"
 			]
 		}
 	},

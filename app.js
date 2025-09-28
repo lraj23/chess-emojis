@@ -1,5 +1,13 @@
 import app from "./client.js";
 
+app.message('', async ({ message, say }) => {
+	await app.client.reactions.add({
+		"channel": message.channel,
+		"name": "chess-brilliant",
+		"timestamp": message.ts
+	})
+});
+
 app.message('secret button', async ({ message, say }) => {
 	// say() sends a message to the channel where the event was triggered
 	await say({
