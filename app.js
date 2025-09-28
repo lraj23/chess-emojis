@@ -17,7 +17,9 @@ const reaction_emojis = [
 	"real-chess-missed-win",
 	"blunder"
 ];
-const systemMessage = `The user message consists of a message sent in a conversation. Your job is to analyze the message and determine how it would fit as a chess move. For example, a common question or statement would be a book move. The best response to a question or statement would likely be a best move. A response that might not be the best but is still good and understandable would be an excellent move. A simply acceptable response would be a good move. A message that is a bit of a mistake or worse than a good move would be an inaccuracy. Worse than that, a mistake. Even worse, a blunder. A message that is unexpected but much better than the expected best move is a great move. A message that is very unexpected, brings more information, and is far beyond the expected best message would be considered a brilliant move. Finally, a message that had a really obvious best move that wasn't said could possibly be a miss instead. What you HAVE to do is respond EXACTLY with one of these following strings according to your best analysis: ${reaction_emojis.join(", ")}.`;
+const systemMessage = `The user message consists of a message sent in a conversation. Your job is to analyze the message and determine how it would fit as a chess move. For example, a common question or statement would be a book move. The best response to a question or statement would likely be a best move. A response that might not be the best but is still good and understandable would be an excellent move. A simply acceptable response would be a good move. A message that is a bit of a mistake or worse than a good move would be an inaccuracy. Worse than that, a mistake. Even worse, a blunder. A message that is unexpected but much better than the expected best move is a great move. A message that is very unexpected, brings more information, and is far beyond the expected best message would be considered a brilliant move. Finally, a message that had a really obvious best move that wasn't said could possibly be a miss instead. What you HAVE to do is respond EXACTLY with one of these following strings according to your best analysis: ${reaction_emojis.join(", ")}.
+
+Just one override: if the message contains the string "secret button" return ${reaction_emojis[0]} NO MATTER WHAT. The user mentioned the secret button!`;
 
 app.message('', async ({ message, say }) => {
 	const response = await fetch(aiApiUrl, {
@@ -54,11 +56,11 @@ app.command('/chess-emojis-opt-in', async (interaction) => {
 	let optedIn = getOptedIn().opted_in;
 
 	if (optedIn.includes(userId)) {
-		await interaction.say(`<@${userId}> has already opted into the Chess Emojis bot's reactions! :inaccuracy:`);
+		await interaction.say(`<@${userId}> has already opted into the Chess Emojis bot's reactions! :${reaction_emojis[6]}:`);
 		return;
 	}
 
-	await interaction.say(`<@${userId}> opted into the Chess Emoji bot's reactions!!! :chess-brilliant:`);
+	await interaction.say(`<@${userId}> opted into the Chess Emoji bot's reactions!!! :${reaction_emojis[0]}:`);
 	optedIn.push(userId);
 	saveState({ "opted_in": optedIn });
 });
@@ -70,13 +72,13 @@ app.command('/chess-emojis-opt-out', async (interaction) => {
 	let optedIn = getOptedIn().opted_in;
 
 	if (optedIn.includes(userId)) {
-		await interaction.say(`<@${userId}> opted out the Chess Emoji bot's reactions. :blunder:`);
+		await interaction.say(`<@${userId}> opted out the Chess Emoji bot's reactions. :${reaction_emojis[9]}:`);
 		optedIn.splice(optedIn.indexOf(userId), 1);
 		saveState({ "opted_in": optedIn });
 		return;
 	}
 
-	await interaction.say(`<@${userId}> You can't opt out because you aren't opted into the Chess Emojis bot's reactions! :real-chess-mistake:`);
+	await interaction.say(`<@${userId}> You can't opt out because you aren't opted into the Chess Emojis bot's reactions! :${reaction_emojis[7]}:`);
 });
 
 app.message('secret button', async ({ message, say }) => {
@@ -93,7 +95,7 @@ app.message('secret button', async ({ message, say }) => {
 					"type": "button",
 					"text": {
 						"type": "plain_text",
-						"text": "Secret Button :chess-brilliant:"
+						"text": "Secret Button :" + reaction_emojis[0] + ":"
 					},
 					"action_id": "button_click"
 				}
@@ -112,18 +114,18 @@ app.action('button_click', async ({ body, ack, say }) => {
 				"type": "section",
 				"text": {
 					"type": "mrkdwn",
-					"text": `<@${body.user.id}> found the secret button :chess-brilliant: Here it is again.`
+					"text": `<@${body.user.id}> found the secret button :${reaction_emojis[0]}: Here it is again.`
 				},
 				"accessory": {
 					"type": "button",
 					"text": {
 						"type": "plain_text",
-						"text": "Secret Button :chess-brilliant:"
+						"text": "Secret Button :" + reaction_emojis[0] + ": "
 					},
 					"action_id": "button_click"
 				}
 			}
 		],
-		text: `<@${body.user.id}> found the secret button :chess-brilliant: Here it is again.`
+		text: `<@${body.user.id}> found the secret button :${reaction_emojis[0]}: Here it is again.`
 	});
 });
