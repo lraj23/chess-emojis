@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import { join } from "node:path";
-import app from "./client.js";
 
 const dataFile = "opt_ins.json";
 const dataFilePath = join(import.meta.dirname, dataFile);
@@ -45,7 +44,7 @@ function log(message) {
 }
 
 async function logInteraction(interaction) {
-	let user = await userRef(interaction);
+	let user = `<@${interaction.payload.user_id || interaction.body.user.id || "<no id>"}|${interaction.payload.user_name || interaction.body.user.name || "<no name>"}>`;
 	let channel = interaction.payload.channel_name || interaction.body.channel.name || "<no channel>";
 
 	if (interaction.command) {
@@ -53,37 +52,6 @@ async function logInteraction(interaction) {
 	} else {
 		log(`Unknown interaction logged: ${JSON.stringify(interaction, null, "\t")}`);
 	}
-}
-
-async function userRef(interaction, defaultName) {
-	// get id and name from interaction
-	let id, name;
-	if (typeof interaction === "string") {
-		id = interaction;
-	} else {
-		id = interaction.payload.user_id || interaction.body.user.id || "<no id>";
-	}
-
-	if (id in optedIn.opted_in) {
-		// player opted in! ...
-		name = id;
-		return `<@${name}>`;
-	} else if (typeof interaction === "string") {
-		// just an ID
-		if (defaultName) name = defaultName;
-		else {
-			name = (await app.client.users.info({
-				"user": id
-			})).user.name;
-			log(`🔍 Couldn't find ${id}, lookup resulted in ${name}`);
-		}
-	} else {
-		// an interaction object. Let's check its properties
-		name = interaction.payload.user_name || interaction.body.user.name || defaultName || "<no name>";
-	}
-
-	// return generic response
-	return `<@${id}|${name}>`;
 }
 
 function getOptedIn() {
