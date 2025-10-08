@@ -18,8 +18,10 @@ const reaction_emojis = [
 	"blunder"
 ];
 const systemMessage = `The user message consists of a message sent in a conversation. Your job is to analyze the message and determine how it would fit as a chess move. `
-	+ `For example, a VERY common question or statement that might usually start a conversation would be a book move. A book move should ONLY be chosen if the message makes sense to start a conversation`
-	+ `The best response to a question or statement would likely be a best move. A response that might not be the best but is still good and understandable would be an excellent move. A simply acceptable response would be a good move. A message that is a bit of a mistake or worse than a good move would be an inaccuracy. Worse than that, a mistake. Even worse, a blunder. A message that is unexpected but much better than the expected best move is a great move. A message that is very unexpected, brings more information, and is far beyond the expected best message would be considered a brilliant move. Finally, a message that had a really obvious best move that wasn't said could possibly be a miss instead. What you HAVE to do is respond EXACTLY with one of these following strings according to your best analysis: ${reaction_emojis.join(", ")}.`
+	+ `For example, a VERY common question or statement that might usually start a conversation would be a book move. A book move should ONLY be chosen if the message makes sense to start a conversation. `
+	+ `The best response to a question or statement would likely be a best move. A response that might not be the best but is still good and understandable would be an excellent move. `
+	+ `A simply acceptable response would be a good move. `
+	+ `A message that is a bit of a mistake or worse than a good move would be an inaccuracy. Worse than that, a mistake. Even worse, a blunder. A message that is unexpected but much better than the expected best move is a great move. A message that is very unexpected, brings more information, and is far beyond the expected best message would be considered a brilliant move. Finally, a message that had a really obvious best move that wasn't said could possibly be a miss instead. What you HAVE to do is respond EXACTLY with EXACTLY TWO of these following strings according to your best analysis: ${reaction_emojis.join(", ")}. Separate the two strings with a space and nothing else.`
 	+ `	
 	Here is the context of the current conversation (it may be incomplete, so don't rely FULLY on this):
 	`;
@@ -61,15 +63,16 @@ app.message('', async ({ message }) => {
 	});
 	pastMessages = pastMessages.messages.filter((msg, i) => (optedIn.dataOptedIn.includes(msg.user) && i)).reverse();
 	console.log(pastMessages);
+	console.log(message.text);
 	const response = await fetch(aiApiUrl, {
 		method: "POST",
 		headers,
 		body: JSON.stringify({
-			"model": "openai/gpt-oss-120b",
+			"model": "openai/gpt-oss-20b:free",
 			"messages": [
 				{
 					"role": "system",
-					"content": systemMessage + pastMessages.map(msg => "User " + msg.user + " said: " + msg.text).join("\n")
+					"content": systemMessage + pastMessages.map(msg => "User " + msg.user + " said (on " + new Date(1000 * msg.ts).toString() + "): " + msg.text).join("\n") + "\n Just so you know, it's currently " + new Date(Date.now()).toString()
 				},
 				{
 					"role": "user",
@@ -80,18 +83,18 @@ app.message('', async ({ message }) => {
 	});
 	const data = await response.json();
 	console.log(data.choices[0].message);
-	await app.client.reactions.add({
+	let reactions = data.choices[0].message.content.split(" ");
+	reactions.forEach(async reaction => await app.client.reactions.add({
 		"channel": message.channel,
-		"name": (res => (reaction_emojis.includes(res) ? res : "error_web"))(data.choices[0].message.content),
+		"name": reaction_emojis.includes(reaction) ? reaction : "error_web",
 		"timestamp": message.ts
-	});
+	}));
 	if (optedIn.explanationOptedIn.includes(message.user)) await app.client.chat.postEphemeral({
 		channel: message.channel,
 		user: message.user,
 		text: data.choices[0].message.reasoning || ":error_web:",
 		thread_ts: ((message.thread_ts == message.ts) ? undefined : message.thread_ts)
 	});
-
 });
 
 app.command('/chess-emojis-data-opt-in', async (interaction) => {
