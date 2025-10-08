@@ -1,8 +1,7 @@
 import app from "./client.js";
 import { getOptedIn, logInteraction, saveState } from "./datahandler.js";
-const aiApiUrl = "https://openrouter.ai/api/v1/chat/completions";
+const aiApiUrl = "https://ai.hackclub.com/chat/completions";
 const headers = {
-	"Authorization": `Bearer ${process.env.CEMOJIS_AI_API_KEY}`,
 	"Content-Type": "application/json"
 };
 const reaction_emojis = [
@@ -62,13 +61,12 @@ app.message('', async ({ message }) => {
 		limit: 30
 	});
 	pastMessages = pastMessages.messages.filter((msg, i) => (optedIn.dataOptedIn.includes(msg.user) && i)).reverse();
-	console.log(pastMessages);
 	console.log(message.text);
 	const response = await fetch(aiApiUrl, {
 		method: "POST",
 		headers,
 		body: JSON.stringify({
-			"model": "openai/gpt-oss-20b:free",
+			"model": "openai/gpt-oss-120b",
 			"messages": [
 				{
 					"role": "system",
@@ -280,9 +278,7 @@ app.message(/secret button/i, async ({ message, say }) => {
 });
 
 app.action('button_click', async ({ body, ack, respond }) => {
-	// Acknowledge the action
 	await ack();
-	console.log(body.channel.id, body.user.id, body.container.message_ts, body.container, body.container.message);
 	await app.client.chat.postEphemeral({
 		channel: body.channel.id,
 		user: body.user.id,
