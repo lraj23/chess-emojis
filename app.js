@@ -25,8 +25,12 @@ const systemMessage = `The user message consists of a message sent in a conversa
 	Here is the context of the current conversation (it may be incomplete, so don't rely FULLY on this):
 	`;
 const lraj23BotTestingId = "C09GR27104V";
+const blackListedChannels = [
+	"C0188CY57PZ" // #meta
+];
 
 app.message('', async ({ message }) => {
+	if (blackListedChannels.includes(message.channel)) return;
 	const optedIn = getOptedIn();
 	if (!optedIn.reactOptedIn.includes(message.user)) {
 		if (message.channel === lraj23BotTestingId) await app.client.chat.postEphemeral({
