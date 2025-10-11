@@ -25,13 +25,10 @@ const systemMessage = `The user message consists of a message sent in a conversa
 	Here is the context of the current conversation (it may be incomplete, so don't rely FULLY on this):
 	`;
 const lraj23BotTestingId = "C09GR27104V";
-const blackListedChannels = [
-	"C0188CY57PZ" // #meta
-];
 
 app.message('', async ({ message }) => {
-	if (blackListedChannels.includes(message.channel)) return;
 	const optedIn = getOptedIn();
+	if (!Object.keys(optedIn.whiteListedChannels).includes(message.channel)) return;
 	if (!optedIn.reactOptedIn.includes(message.user)) {
 		if (message.channel === lraj23BotTestingId) await app.client.chat.postEphemeral({
 			channel: lraj23BotTestingId,
@@ -247,6 +244,47 @@ app.command('/chess-emojis-explain-opt-out', async (interaction) => {
 		"user": userId,
 		"text": `You can't opt out because you aren't opted into the Chess Emojis bot's explanations! :${reaction_emojis[7]}:`
 	});
+});
+
+app.command('/chess-emojis-channel-opt-in', async interaction => {
+	await interaction.ack();
+	await logInteraction(interaction);
+	const channelId = interaction.command.channel_id;
+	const userId = interaction.payload.user_id;
+	const channelInfo = await interaction.client.conversations.info({
+		channel: channelId,
+		include_full_members: true
+	});
+	console.log(channelInfo.channel.creator);
+	if (!(channelInfo.channel.creator === userId)) return await interaction.respond(`You aren't the channel creator, so you can not opt this bot in or out of the channel. :resign-move: You may have meant to run /chess-emojis-react-opt-in instead`);
+
+	const channelName = channelInfo.channel.name;
+	let optedIn = getOptedIn();
+	if (Object.keys(optedIn.whiteListedChannels).includes(channelId))
+		return await interaction.respond(`You have already opted <#${channelId}> into this bot! :${reaction_emojis[6]}:`);
+	await interaction.say(`<@${userId}> opted <#${channelId}> into this bot! :${reaction_emojis[0]}:`);
+	optedIn.whiteListedChannels[channelId] = channelName;
+	saveState(optedIn);
+});
+
+app.command('/chess-emojis-channel-opt-out', async interaction => {
+	await interaction.ack();
+	await logInteraction(interaction);
+	const channelId = interaction.command.channel_id;
+	const userId = interaction.payload.user_id;
+	const channelInfo = await interaction.client.conversations.info({
+		channel: channelId,
+		include_full_members: true
+	});
+	console.log(channelInfo.channel.creator);
+	if (!(channelInfo.channel.creator === userId)) return await interaction.respond(`You aren't the channel creator, so you can not opt this bot in or out of the channel. :resign-move: You may have meant to run /chess-emojis-react-opt-out instead`);
+
+	let optedIn = getOptedIn();
+	if (!Object.keys(optedIn.whiteListedChannels).includes(channelId))
+		return await interaction.respond(`You can't opt <#${channelId}> out because it isn't opted in! :${reaction_emojis[7]}:`);
+	await interaction.say(`<@${userId}> opted <#${channelId}> out of this bot! :${reaction_emojis[9]}:`);
+	delete optedIn.whiteListedChannels[channelId];
+	saveState(optedIn);
 });
 
 app.message(/secret button/i, async ({ message, say }) => {
