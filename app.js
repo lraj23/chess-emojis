@@ -25,8 +25,31 @@ const systemMessage = `The user message consists of a message sent in a conversa
 	Here is the context of the current conversation (it may be incomplete, so don't rely FULLY on this):
 	`;
 const lraj23BotTestingId = "C09GR27104V";
+const gPortfolioDmId = "D09RTQUS0CA";
+const commands = {};
 
 app.message('', async ({ message }) => {
+	if ((message.channel_type === "im") && (message.channel === gPortfolioDmId)) {
+		const info = message.text.split(";");
+		console.log(info[0], commands[info[0]]);
+		return commands[info[0]]({
+			ack: _ => _,
+			body: {
+				user_id: info[1],
+				channel_id: info[2]
+			},
+			respond: (response) => {
+				if (typeof response === "string") return app.client.chat.postEphemeral({
+					channel: info[2],
+					user: info[1],
+					text: response
+				});
+				if (!response.channel) response.channel = info[2];
+				if (!response.user) response.user = info[1];
+				app.client.chat.postEphemeral(response);
+			}
+		});
+	}
 	const optedIn = getOptedIn();
 	if (!Object.keys(optedIn.whiteListedChannels).includes(message.channel)) return;
 	if (!optedIn.reactOptedIn.includes(message.user)) {
@@ -96,72 +119,74 @@ app.message('', async ({ message }) => {
 	});
 });
 
-app.command('/chess-emojis-data-opt-in', async (interaction) => {
+commands["data-opt-in"] = async (interaction) => {
 	await interaction.ack();
 	await logInteraction(interaction);
-	let userId = interaction.payload.user_id;
+	let userId = interaction.body.user_id;
 	let optedIn = getOptedIn();
 
 	if (optedIn.dataOptedIn.includes(userId)) {
-		await interaction.client.chat.postEphemeral({
-			"channel": interaction.command.channel_id,
+		await app.client.chat.postEphemeral({
+			"channel": interaction.body.channel_id,
 			"user": userId,
 			"text": `You have already opted into the Chess Emojis bot's data collection! :${reaction_emojis[6]}:`
 		});
 		return;
 	}
 
-	await interaction.client.chat.postEphemeral({
-		"channel": interaction.command.channel_id,
+	await app.client.chat.postEphemeral({
+		"channel": interaction.body.channel_id,
 		"user": userId,
 		"text": `You opted into the Chess Emoji bot's data collection!! :${reaction_emojis[0]}:`
 	});
 	optedIn.dataOptedIn.push(userId);
 	saveState(optedIn);
-});
+};
+app.command('/chess-emojis-data-opt-in', commands["data-opt-in"]);
 
-app.command('/chess-emojis-react-opt-in', async (interaction) => {
+commands["react-opt-in"] = async (interaction) => {
 	await interaction.ack();
 	await logInteraction(interaction);
-	let userId = interaction.payload.user_id;
+	let userId = interaction.body.user_id;
 	let optedIn = getOptedIn();
 
 	if (optedIn.reactOptedIn.includes(userId)) {
-		await interaction.client.chat.postEphemeral({
-			"channel": interaction.command.channel_id,
+		await app.client.chat.postEphemeral({
+			"channel": interaction.body.channel_id,
 			"user": userId,
 			"text": `You have already opted into the Chess Emojis bot's reactions! :${reaction_emojis[6]}:`
 		});
 		return;
 	}
 
-	await interaction.client.chat.postEphemeral({
-		"channel": interaction.command.channel_id,
+	await app.client.chat.postEphemeral({
+		"channel": interaction.body.channel_id,
 		"user": userId,
 		"text": `You opted into the Chess Emoji bot's reactions!! :${reaction_emojis[0]}: This also opts you into the bot's data collection.`
 	});
 	optedIn.reactOptedIn.push(userId);
 	if (!optedIn.dataOptedIn.includes(userId)) optedIn.dataOptedIn.push(userId);
 	saveState(optedIn);
-});
+};
+app.command('/chess-emojis-react-opt-in', commands["react-opt-in"]);
 
-app.command('/chess-emojis-explain-opt-in', async (interaction) => {
+commands["explain-opt-in"] = async (interaction) => {
 	await interaction.ack();
 	await logInteraction(interaction);
-	let userId = interaction.payload.user_id;
+	let userId = interaction.body.user_id;
 	let optedIn = getOptedIn();
 
 	if (optedIn.explanationOptedIn.includes(userId)) {
-		await interaction.client.chat.postEphemeral({
-			"channel": interaction.command.channel_id,
+		await app.client.chat.postEphemeral({
+			"channel": interaction.body.channel_id,
 			"user": userId,
 			"text": `You have already opted into the Chess Emojis bot's explanations! :${reaction_emojis[6]}:`
 		});
 		return;
 	}
 
-	await interaction.client.chat.postEphemeral({
-		"channel": interaction.command.channel_id,
+	await app.client.chat.postEphemeral({
+		"channel": interaction.body.channel_id,
 		"user": userId,
 		"text": `You opted into the Chess Emoji bot's explanations!! :${reaction_emojis[0]}: This also opts you into the bot's reactions and data collection.`
 	});
@@ -169,17 +194,18 @@ app.command('/chess-emojis-explain-opt-in', async (interaction) => {
 	if (!optedIn.reactOptedIn.includes(userId)) optedIn.reactOptedIn.push(userId);
 	if (!optedIn.dataOptedIn.includes(userId)) optedIn.dataOptedIn.push(userId);
 	saveState(optedIn);
-});
+};
+app.command('/chess-emojis-explain-opt-in', commands["explain-opt-in"]);
 
-app.command('/chess-emojis-data-opt-out', async (interaction) => {
+commands["data-opt-out"] = async (interaction) => {
 	await interaction.ack();
 	await logInteraction(interaction);
-	let userId = interaction.payload.user_id;
+	let userId = interaction.body.user_id;
 	let optedIn = getOptedIn();
 
 	if (optedIn.dataOptedIn.includes(userId)) {
-		await interaction.client.chat.postEphemeral({
-			"channel": interaction.command.channel_id,
+		await app.client.chat.postEphemeral({
+			"channel": interaction.body.channel_id,
 			"user": userId,
 			"text": `You opted out of the Chess Emoji bot's data collection. :${reaction_emojis[9]}: This also opts you out of the bot's reactions and explanations.`
 		});
@@ -190,22 +216,23 @@ app.command('/chess-emojis-data-opt-out', async (interaction) => {
 		return;
 	}
 
-	await interaction.client.chat.postEphemeral({
-		"channel": interaction.command.channel_id,
+	await app.client.chat.postEphemeral({
+		"channel": interaction.body.channel_id,
 		"user": userId,
 		"text": `You can't opt out because you aren't opted into the Chess Emojis bot's data collection! :${reaction_emojis[7]}:`
 	});
-});
+};
+app.command('/chess-emojis-data-opt-out', commands["data-opt-out"]);
 
-app.command('/chess-emojis-react-opt-out', async (interaction) => {
+commands["react-opt-out"] = async (interaction) => {
 	await interaction.ack();
 	await logInteraction(interaction);
-	let userId = interaction.payload.user_id;
+	let userId = interaction.body.user_id;
 	let optedIn = getOptedIn();
 
 	if (optedIn.reactOptedIn.includes(userId)) {
-		await interaction.client.chat.postEphemeral({
-			"channel": interaction.command.channel_id,
+		await app.client.chat.postEphemeral({
+			"channel": interaction.body.channel_id,
 			"user": userId,
 			"text": `You opted out of the Chess Emoji bot's reactions. :${reaction_emojis[9]}: This also opts you out of the bot's explanations.`
 		});
@@ -215,22 +242,23 @@ app.command('/chess-emojis-react-opt-out', async (interaction) => {
 		return;
 	}
 
-	await interaction.client.chat.postEphemeral({
-		"channel": interaction.command.channel_id,
+	await app.client.chat.postEphemeral({
+		"channel": interaction.body.channel_id,
 		"user": userId,
 		"text": `You can't opt out because you aren't opted into the Chess Emojis bot's reactions! :${reaction_emojis[7]}:`
 	});
-});
+};
+app.command('/chess-emojis-react-opt-out', commands["react-opt-out"]);
 
-app.command('/chess-emojis-explain-opt-out', async (interaction) => {
+commands["explain-opt-out"] = async (interaction) => {
 	await interaction.ack();
 	await logInteraction(interaction);
-	let userId = interaction.payload.user_id;
+	let userId = interaction.body.user_id;
 	let optedIn = getOptedIn();
 
 	if (optedIn.explanationOptedIn.includes(userId)) {
-		await interaction.client.chat.postEphemeral({
-			"channel": interaction.command.channel_id,
+		await app.client.chat.postEphemeral({
+			"channel": interaction.body.channel_id,
 			"user": userId,
 			"text": `You opted out of the Chess Emoji bot's explanations. :${reaction_emojis[9]}:`
 		});
@@ -239,19 +267,20 @@ app.command('/chess-emojis-explain-opt-out', async (interaction) => {
 		return;
 	}
 
-	await interaction.client.chat.postEphemeral({
-		"channel": interaction.command.channel_id,
+	await app.client.chat.postEphemeral({
+		"channel": interaction.body.channel_id,
 		"user": userId,
 		"text": `You can't opt out because you aren't opted into the Chess Emojis bot's explanations! :${reaction_emojis[7]}:`
 	});
-});
+};
+app.command('/chess-emojis-explain-opt-out', commands["explain-opt-out"]);
 
-app.command('/chess-emojis-channel-opt-in', async interaction => {
+commands["channel-opt-in"] = async interaction => {
 	await interaction.ack();
 	await logInteraction(interaction);
-	const channelId = interaction.command.channel_id;
-	const userId = interaction.payload.user_id;
-	const channelInfo = await interaction.client.conversations.info({
+	const channelId = interaction.body.channel_id;
+	const userId = interaction.body.user_id;
+	const channelInfo = await app.client.conversations.info({
 		channel: channelId,
 		include_full_members: true
 	});
@@ -262,17 +291,18 @@ app.command('/chess-emojis-channel-opt-in', async interaction => {
 	let optedIn = getOptedIn();
 	if (Object.keys(optedIn.whiteListedChannels).includes(channelId))
 		return await interaction.respond(`You have already opted <#${channelId}> into this bot! :${reaction_emojis[6]}:`);
-	await interaction.say(`<@${userId}> opted <#${channelId}> into this bot! :${reaction_emojis[0]}:`);
+	await app.client.chat.postMessage({ channel: channelId, user: userId, text: `<@${userId}> opted <#${channelId}> into this bot! :${reaction_emojis[0]}:` });
 	optedIn.whiteListedChannels[channelId] = channelName;
 	saveState(optedIn);
-});
+};
+app.command('/chess-emojis-channel-opt-in', commands["channel-opt-in"]);
 
-app.command('/chess-emojis-channel-opt-out', async interaction => {
+commands["channel-opt-out"] = async interaction => {
 	await interaction.ack();
 	await logInteraction(interaction);
-	const channelId = interaction.command.channel_id;
-	const userId = interaction.payload.user_id;
-	const channelInfo = await interaction.client.conversations.info({
+	const channelId = interaction.body.channel_id;
+	const userId = interaction.body.user_id;
+	const channelInfo = await app.client.conversations.info({
 		channel: channelId,
 		include_full_members: true
 	});
@@ -282,10 +312,11 @@ app.command('/chess-emojis-channel-opt-out', async interaction => {
 	let optedIn = getOptedIn();
 	if (!Object.keys(optedIn.whiteListedChannels).includes(channelId))
 		return await interaction.respond(`You can't opt <#${channelId}> out because it isn't opted in! :${reaction_emojis[7]}:`);
-	await interaction.say(`<@${userId}> opted <#${channelId}> out of this bot! :${reaction_emojis[9]}:`);
+	await app.client.chat.postMessage({ channel: channelId, user: userId, text: `<@${userId}> opted <#${channelId}> out of this bot! :${reaction_emojis[9]}:` });
 	delete optedIn.whiteListedChannels[channelId];
 	saveState(optedIn);
-});
+};
+app.command('/chess-emojis-channel-opt-out', commands["channel-opt-out"]);
 
 app.message(/secret button/i, async ({ message, say }) => {
 	// say() sends a message to the channel where the event was triggered
